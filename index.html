@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fun Math World</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="stars"></div>
+
+  <!-- AUDIO EFFECTS -->
+  <audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2023/04/25/audio_65ae1bfa2c.mp3?filename=correct-2-46134.mp3"></audio>
+  <audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_1fd1b5f2af.mp3?filename=error-126627.mp3"></audio>
+
+  <!-- HOME PAGE -->
+  <div id="home-page" class="page">
+    <div class="content-box">
+      <h1>🎲 Welcome to Fun Math World!</h1>
+      <p>Play, learn, and become a Math Star! ✨</p>
+      <button onclick="startForm()">Let’s Start ➡️</button>
+      <div id="author-tag">By Mudassir</div>
+    </div>
+  </div>
+
+  <!-- FORM SECTION -->
+  <div id="form-section" class="page">
+    <div class="form-card">
+      <img src="https://raw.githubusercontent.com/ismee-almas/my-images/refs/heads/main/math-fun4.jpg" width="100">
+      <h2>🌟 Enter your details to start your Math Adventure! 🌟</h2>
+      <form id="studentForm">
+        <input type="text" id="name" placeholder="😀 Your Name" required><br>
+        <input type="text" id="class" placeholder="📚 Your Class" required><br>
+        <input type="text" id="school" placeholder="🏫 Your School" required><br>
+        <button type="submit">Play Now!</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- GAME SECTION -->
+  <div id="game-section" class="page">
+    <div id="reaction" style="font-size: 60px; margin-bottom: 15px;">😇😇😇</div>
+    <div id="milestone-message" class="milestone"></div>
+
+    <div class="game-card">
+      <div id="score">Score: 0</div>
+      <div id="mode-selection">
+        <button type="button" onclick="setMode('add')">Explore Additions</button>
+        <button type="button" onclick="setMode('sub')">Explore Subtractions</button>
+        <button type="button" onclick="setMode('mul')">Explore Multiplications</button>
+        <button type="button" onclick="setMode('div')">Explore Divisions</button>
+        <button type="button" class="word-btn" onclick="tryWordProblems()">🎃🎃🎃 Try Word Problems</button>
+      </div>
+
+      <div id="question-area" style="display:none;">
+        <h2 id="question">Question appears here</h2>
+        <input type="number" id="answerInput" placeholder="Type your answer">
+        <button onclick="checkAnswer()">Submit Answer</button>
+        <p id="feedback"></p>
+        <button id="backButton" onclick="goBack()">⬅ Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORD PROBLEM SECTION -->
+  <div id="word-section" class="page">
+    <div class="word-card">
+      <h2 id="word-problem">Word problem will appear here</h2>
+      <input type="number" id="wordAnswerInput" placeholder="Type your answer">
+      <button onclick="checkWordAnswer()">Submit</button>
+      <p id="wordFeedback"></p>
+      <div id="next-buttons" style="display:none;">
+        <button onclick="nextWordProblem()">Yes</button>
+        <button onclick="exitWordProblems()">No</button>
+      </div>
+      <button onclick="exitWordProblems()" class="back-main">⬅ Back</button>
+    </div>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    const form = document.getElementById("studentForm");
+    const gameSection = document.getElementById("game-section");
+    const formSection = document.getElementById("form-section");
+    const homePage = document.getElementById("home-page");
+    const scoreDisplay = document.getElementById("score");
+    const milestoneMsg = document.getElementById("milestone-message");
+
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+
+    let studentData = {};
+    let currentMode = "add";
+    let correctAnswer;
+    let score = 0;
+
+    let correctCounts = { add: 0, sub: 0, mul: 0, div: 0 };
+
+    function startForm() {
+      correctSound.currentTime = 0;
+      correctSound.play();
+      homePage.style.display = "none";
+      formSection.style.display = "flex";
+    }
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      studentData.name = document.getElementById("name").value.trim();
+      studentData.class = document.getElementById("class").value.trim();
+      studentData.school = document.getElementById("school").value.trim();
+      if (!studentData.name || !studentData.class || !studentData.school) {
+        alert("Please fill all fields");
+        return;
+      }
+      formSection.style.display = "none";
+      gameSection.style.display = "flex";
+    });
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById("mode-selection").style.display = "none";
+      document.getElementById("question-area").style.display = "block";
+      generateQuestion();
+    }
+
+    function goBack() {
+      document.getElementById("mode-selection").style.display = "flex";
+      document.getElementById("question-area").style.display = "none";
+      document.getElementById("feedback").textContent = "";
+    }
+
+    // Dynamic difficulty scaling
+    function rangeFor(mode) {
+      if (mode === "mul" || mode === "div") {
+        if (score < 3) return [10, 5];
+        if (score < 6) return [20, 10];
+        if (score < 10) return [50, 15];
+        return [100, 20];
+      } else {
+        if (score < 3) return [9, 20];
+        if (score < 6) return [50, 70];
+        if (score < 10) return [100, 200];
+        return [500, 999];
+      }
+    }
+
+    function generateQuestion() {
+      let a, b;
+      let [maxRange1, maxRange2] = rangeFor(currentMode);
+      let questionText;
+
+      switch (currentMode) {
+        case "sub":
+          a = Math.floor(Math.random()*maxRange1)+1;
+          b = Math.floor(Math.random()*maxRange2)+1;
+          if (b>a) [a,b]=[b,a];
+          correctAnswer = a-b;
+          questionText = `What is ${a} - ${b}?`;
+          break;
+        case "mul":
+          a = Math.floor(Math.random()*maxRange1)+1;
+          b = Math.floor(Math.random()*maxRange2)+1;
+          correctAnswer = a*b;
+          questionText = `What is ${a} × ${b}?`;
+          break;
+        case "div":
+          a = Math.floor(Math.random()*maxRange1)+2;
+          b = Math.floor(Math.random()*maxRange2)+2;
+          let dividend = a*b;
+          correctAnswer = dividend/b;
+          questionText = `What is ${dividend} ÷ ${b}?`;
+          break;
+        default:
+          a = Math.floor(Math.random()*maxRange1)+1;
+          b = Math.floor(Math.random()*maxRange2)+1;
+          correctAnswer = a+b;
+          questionText = `What is ${a} + ${b}?`;
+      }
+
+      document.getElementById("question").textContent = questionText;
+      document.getElementById("answerInput").value = "";
+      document.getElementById("feedback").textContent = "";
+    }
+
+    function checkAnswer() {
+      const userAnswer = parseInt(document.getElementById("answerInput").value);
+      const feedback = document.getElementById("feedback");
+      const reaction = document.getElementById("reaction");
+      const isCorrect = userAnswer === correctAnswer;
+
+      if (isCorrect) {
+        correctSound.play();
+        feedback.textContent = "✅ Great job! Keep going!";
+        feedback.style.color = "green";
+        score++;
+        correctCounts[currentMode]++;
+        scoreDisplay.textContent = "Score: " + score;
+        reaction.textContent = "😄🎉";
+
+        if (correctCounts[currentMode] % 5 === 0) {
+          milestoneMsg.textContent = `Hurray!!! You have answered ${correctCounts[currentMode]} ${currentMode} questions!`;
+          milestoneMsg.style.display = "block";
+          launchConfetti();
+          setTimeout(()=>milestoneMsg.style.display="none", 3000);
+        }
+        launchConfetti();
+      } else {
+        wrongSound.play();
+        feedback.textContent = `❌ Oops! The correct answer is ${correctAnswer}. You can do it!`;
+        feedback.style.color = "red";
+        reaction.textContent = "😟💪";
+      }
+
+      setTimeout(generateQuestion, 3000);
+    }
+
+    function tryWordProblems() {
+      if (correctCounts.add < 2 ||
+          correctCounts.sub < 2 ||
+          correctCounts.mul < 2 ||
+          correctCounts.div < 2) {
+        let msg = "You need to complete:\n";
+        if (correctCounts.add < 2) msg += "• At least 2 addition questions\n";
+        if (correctCounts.sub < 2) msg += "• At least 2 subtraction questions\n";
+        if (correctCounts.mul < 2) msg += "• At least 2 multiplication questions\n";
+        if (correctCounts.div < 2) msg += "• At least 2 division questions\n";
+        alert(msg);
+        return;
+      }
+      gameSection.style.display = "none";
+      wordSection.style.display = "flex";
+      generateWordProblem();
+    }
+
+    const wordSection = document.getElementById("word-section");
+    const wordProblem = document.getElementById("word-problem");
+    const wordFeedback = document.getElementById("wordFeedback");
+    const nextButtons = document.getElementById("next-buttons");
+
+    const wordProblems = [
+      {q:"Ali has 5 apples and buys 7 more. How many apples does he have?", a:12},
+      {q:"Sara has 20 candies and gives 8 to her friend. How many left?", a:12},
+      {q:"There are 6 baskets, each with 4 mangoes. How many mangoes?", a:24},
+      {q:"A teacher divides 30 pencils equally among 5 students. Each gets?", a:6},
+    ];
+
+    function generateWordProblem() {
+      const wp = wordProblems[Math.floor(Math.random()*wordProblems.length)];
+      wordProblem.textContent = wp.q;
+      wordProblem.dataset.answer = wp.a;
+      wordFeedback.textContent = "";
+      document.getElementById("wordAnswerInput").value = "";
+      nextButtons.style.display = "none";
+    }
+
+    function checkWordAnswer() {
+      const user = parseInt(document.getElementById("wordAnswerInput").value);
+      const ans = parseInt(wordProblem.dataset.answer);
+      if (user === ans) {
+        correctSound.play();
+        wordFeedback.textContent = "🎉 Correct! Ready for next question?";
+        wordFeedback.style.color = "green";
+        nextButtons.style.display = "block";
+      } else {
+        wrongSound.play();
+        wordFeedback.textContent = `❌ Wrong! Correct answer: ${ans}. Try again.`;
+        wordFeedback.style.color = "red";
+      }
+    }
+
+    function nextWordProblem() { generateWordProblem(); }
+    function exitWordProblems() {
+      wordSection.style.display = "none";
+      gameSection.style.display = "flex";
+    }
+
+    const canvas = document.getElementById("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    let confettiParticles = [];
+    function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+    window.addEventListener("resize", resizeCanvas); resizeCanvas();
+    function launchConfetti() {
+      for (let i=0;i<100;i++){
+        confettiParticles.push({x:Math.random()*canvas.width,y:-10,
+          color:`hsl(${Math.random()*360},100%,50%)`,
+          size:Math.random()*6+2,speed:Math.random()*3+2});
+      }
+      requestAnimationFrame(updateConfetti);
+    }
+    function updateConfetti() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      confettiParticles.forEach(p=>{
+        p.y+=p.speed;
+        ctx.fillStyle=p.color;
+        ctx.fillRect(p.x,p.y,p.size,p.size);
+      });
+      confettiParticles=confettiParticles.filter(p=>p.y<canvas.height);
+      if(confettiParticles.length>0) requestAnimationFrame(updateConfetti);
+    }
+
+    homePage.style.display = "flex";
+  </script>
+</body>
+</html>
